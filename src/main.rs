@@ -18,33 +18,31 @@ fn run_diff(file1: &str, file2: &str) -> Result<(), String> {
 
     let start_time = Instant::now();
 
+    // Stream the files in parallel and returns vectors of lines
     let (content1_first_half, content1_second_half) = file_streamer::parallel_read(file1)
         .map_err(|e| format!("Failed to read {}: {}", file1, e))?;
-
     let (content2_first_half, content2_second_half) = file_streamer::parallel_read(file2)
         .map_err(|e| format!("Failed to read {}: {}", file2, e))?;
 
     let file_read_time = start_time.elapsed();
 
-    let _diffs = diff_engine::compute_diff(
+    // Compute the differences by parallelizing the stream
+    let diffs = diff_engine::compute_diff(
         content1_first_half, content1_second_half, 
         content2_first_half, content2_second_half)
         .map_err(|e| format!("Failed to compute differences: {}", e))?;
 
     let diff_time = start_time.elapsed() - file_read_time;
 
-    // if diffs.is_empty() {
-    //     println!("No differences found.");
-    // } else {
-    //     println!("Differences found:");
-    //     for diff in diffs {
-    //         println!("{}", diff);
-    //     }
-    // }
-
     println!("File read time: {:?}", file_read_time);
     println!("Diff computation time: {:?}", diff_time);
     println!("Total time: {:?}", start_time.elapsed());
+
+    if diffs.is_empty() {
+        println!("No differences found.");
+    } else {
+        println!("Differences found:");
+    }
 
     // let start_time1 = Instant::now();
 
