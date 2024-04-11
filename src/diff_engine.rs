@@ -1,4 +1,5 @@
-// In diff_engine.rs
+use std::sync::mpsc;
+use std::thread;
 
 pub fn compute_diff(
     content1_first_half: Vec<String>,
@@ -6,16 +7,30 @@ pub fn compute_diff(
     content2_first_half: Vec<String>,
     content2_second_half: Vec<String>,
 ) -> Result<Vec<String>, String> {
-    let mut differences = Vec::new();
+    let (tx, rx) = mpsc::channel();
 
-    let content1 = [content1_first_half, content1_second_half].concat();
-    let content2 = [content2_first_half, content2_second_half].concat();
+    let tx1 = tx.clone();
 
-    for (line1, line2) in content1.iter().zip(content2.iter()) {
-        if line1 != line2 {
-            differences.push(format!("File1: '{}', File2: '{}'", line1, line2));
+    let handler1 = thread::spawn(move || {
+        for (line1, line2) in content1_first_half.iter().zip(content2_first_half.iter()) {
+            if line1 != line2 {
+                tx.send(format!("File1: '{}', File2: '{}'", line1, line2)).unwrap();
+            }
         }
-    }
+    });
+
+    let handler2 = thread::spawn(move || {
+        for (line1, line2) in content1_second_half.iter().zip(content2_second_half.iter()) {
+            if line1 != line2 {
+                tx1.send(format!("File1: '{}', File2: '{}'", line1, line2)).unwrap();
+            }
+        }
+    });
+
+    handler1.join().unwrap();
+    handler2.join().unwrap();
+
+    let differences = rx.iter().collect::<Vec<_>>();
 
     Ok(differences)
 }

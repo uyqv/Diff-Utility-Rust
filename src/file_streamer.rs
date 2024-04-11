@@ -1,32 +1,39 @@
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Seek, SeekFrom};
 use std::sync::mpsc;
 use std::thread;
 
 pub fn parallel_read(file_path: &str) -> io::Result<(Vec<String>, Vec<String>)> {
     let file = File::open(file_path)?;
-    let reader = BufReader::new(file);
-    let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
+    let metadata = file.metadata()?;
+    let file_size = metadata.len();
 
+    let half = file_size / 2;
     let (tx, rx) = mpsc::channel();
 
-    let half = lines.len() / 2;
-
-    let lines_first_half = lines[..half].to_vec();
-    let lines_second_half = lines[half..].to_vec();
-
     let tx1 = mpsc::Sender::clone(&tx);
-    let handle1 = thread::spawn(move || {
-        tx1.send(lines_first_half).unwrap();
+    let file_path_clone = file_path.to_string();
+    thread::spawn(move || {
+        let file = File::open(&file_path_clone).unwrap();
+        let mut reader = BufReader::new(file);
+        let mut lines = Vec::new();
+        let mut buffer = String::new();
+        while reader.stream_position().unwrap() < half {
+            reader.read_line(&mut buffer).unwrap();
+            lines.push(buffer.clone());
+            buffer.clear();
+        }
+        tx1.send(lines).unwrap();
     });
 
-    let handle2 = thread::spawn(move || {
-        let second_half_reversed = lines_second_half.into_iter().rev().collect();
-        tx.send(second_half_reversed).unwrap();
+    let file_path_clone = file_path.to_string();
+    thread::spawn(move || {
+        let file = File::open(&file_path_clone).unwrap();
+        let mut reader = BufReader::new(file);
+        reader.seek(SeekFrom::Start(half)).unwrap();
+        let lines = reader.lines().collect::<Result<Vec<_>, _>>().unwrap();
+        tx.send(lines).unwrap();
     });
-
-    handle1.join().unwrap();
-    handle2.join().unwrap();
 
     let first_half = rx.recv().unwrap();
     let second_half = rx.recv().unwrap();
