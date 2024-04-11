@@ -6,8 +6,7 @@ Diff computation time: 789.3694ms
 Total time: 802.429ms
 
 - 4/11/2024 (myfeature)
-File read time: 3.4µs
-Diff computation time: 207.4323ms
+Diff and chunk read computation time: 207.4323ms
 Total time: 208.5496ms
 
 Bidirectional comparision:

@@ -1,8 +1,6 @@
 use std::fs::File;
 use std::io::{self, BufReader, Read};
 
-const DEFAULT_CHUNK_SIZE: usize = 1024 * 1024; // 1 MB default chunk size
-
 // hold file paths and chunk size
 pub struct FileStreamer {
     file_path1: String,
@@ -16,7 +14,7 @@ impl FileStreamer {
         FileStreamer {
             file_path1: file_path1.to_string(),
             file_path2: file_path2.to_string(),
-            chunk_size: if chunk_size == 0 { DEFAULT_CHUNK_SIZE } else { chunk_size },
+            chunk_size: chunk_size,
         }
     }
 

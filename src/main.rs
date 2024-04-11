@@ -7,10 +7,10 @@ use diff_engine::DiffEngine;
 use std::time::Instant;
 
 fn main() {
-    let (file1, file2) = cli::parse_arguments();
+    let (file1, file2, chunk_size) = cli::parse_arguments();
     // let file1 = String::from("src/data/temp1.txt");
     // let file2 = String::from("src/data/temp2.txt");
-    if let Err(e) = run_diff(&file1, &file2) {
+    if let Err(e) = run_diff(&file1, &file2, chunk_size) {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
@@ -18,16 +18,13 @@ fn main() {
 
 // PARAMETERS: file paths
 // RETURNS: error message if panic occurs
-fn run_diff(file1: &str, file2: &str) -> Result<(), String> {
+fn run_diff(file1: &str, file2: &str, chunk_size: usize) -> Result<(), String> {
     println!("Comparing files {} and {}", file1, file2);
-    let chunk_size = 1024 * 1024; // 1 MB, will become configurable later
 
     let start_time = Instant::now();
     
     // creates a new instance of FileStreamer
     let file_streamer = FileStreamer::new(file1, file2, chunk_size);
-
-    let file_read_time = start_time.elapsed();
 
     // create a new instance of DiffEngine
     let diff_engine = DiffEngine::new();
@@ -50,10 +47,9 @@ fn run_diff(file1: &str, file2: &str) -> Result<(), String> {
                 }
             }
 
-            let diff_time = start_time.elapsed() - file_read_time;
+            let diff_time = start_time.elapsed();
 
-            println!("\nFile read time: {:?}", file_read_time);
-            println!("Diff computation time: {:?}", diff_time);
+            println!("Diff and rile read computation time: {:?}", diff_time);
             println!("Total time: {:?}", start_time.elapsed());
         }
         Err(e) => eprintln!("Error creating chunk stream: {}", e),
