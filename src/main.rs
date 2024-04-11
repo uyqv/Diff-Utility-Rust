@@ -41,7 +41,7 @@ fn run_diff(file1: &str, file2: &str) -> Result<(), String> {
     if diffs.is_empty() {
         println!("No differences found.");
     } else {
-        println!("Differences found:");
+        println!("Difference(s) found");
     }
 
     // let start_time1 = Instant::now();
