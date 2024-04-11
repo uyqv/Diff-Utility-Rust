@@ -1,4 +1,3 @@
-// Import necessary components from clap
 use clap::{App, Arg};
 
 pub fn parse_arguments() -> (String, String) {
