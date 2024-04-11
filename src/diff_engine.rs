@@ -1,29 +1,50 @@
-use rayon::prelude::*; // parallel processing
+use rayon::prelude::*; // enables data-parallel operations
 
-// PARAMETERS: four vector of strings
-// RETURNS: a vector of strings containing the differences in 'Result' type
-pub fn compute_diff(
-    content1_first_half: Vec<String>,
-    content1_second_half: Vec<String>,
-    content2_first_half: Vec<String>,
-    content2_second_half: Vec<String>,
-) -> Result<Vec<String>, String> {
-    // chains the two vectors together and returns a Iterator
-    let content1_iter = content1_first_half.into_iter().chain(content1_second_half.into_iter());
-    let content2_iter = content2_first_half.into_iter().chain(content2_second_half.into_iter());
+pub struct DiffEngine {}
 
-    // Use par_bridge to turn the chained iterator into a parallel iterator
-    let differences: Vec<_> = content1_iter
-        .zip(content2_iter) // pairs elements together, preparing for parallel processing
-        .par_bridge() // Convert to parallel iterator
-        .filter_map(|(line1, line2)| {
-            if line1 != line2 {
-                Some(format!("File1: '{}', File2: '{}'", line1, line2))
-            } else {
-                None
-            }
-        })
-        .collect(); // collects result from filter_map that was flagged by "Some(..)"
+#[derive(Debug, PartialEq)] // automatically implements PartialEq for Difference
+pub struct Difference {
+    pub from: String,
+    pub to: String,
+}
 
-    Ok(differences)
+// constructor for DiffEngine
+// RETURNS: an instance of DiffEngine
+impl DiffEngine {
+    pub fn new() -> DiffEngine {
+        DiffEngine {}
+    }
+
+    // compares two chunks and returns a list of differences
+    // PARAMETERS: two chunks of data
+    // RETURNS: a list of Differences 
+    pub fn compare_chunks(&self, chunk1: &[u8], chunk2: &[u8]) -> Vec<Difference> {
+        // convert byte slices to UTF-8 strings
+        let content1 = std::str::from_utf8(chunk1).unwrap_or_default();
+        let content2 = std::str::from_utf8(chunk2).unwrap_or_default();
+
+        // split the strings into lines or units for comparison
+        let lines1: Vec<&str> = content1.lines().collect();
+        let lines2: Vec<&str> = content2.lines().collect();
+
+        // find the minimum length to avoid index out of bounds
+        let min_length = lines1.len().min(lines2.len());
+
+        // compare each line in parallel
+        lines1
+            .into_par_iter() 
+            .zip(lines2.into_par_iter()) // pairs elements together, preparing for parallel processing
+            .enumerate() // tranforms the iterator of pairs into an iterator of tuples
+            .filter_map(|(index, (line1, line2))| {
+                if index < min_length && line1 != line2 {
+                    Some(Difference {
+                        from: line1.to_string(),
+                        to: line2.to_string(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect() // collects result from filter_map that was flagged by "Some(..)"
+    }
 }

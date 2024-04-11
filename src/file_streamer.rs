@@ -1,52 +1,62 @@
-use std::fs::File; // file operations
-use std::io::{self, BufRead, BufReader, Seek, SeekFrom}; //IO operations
-use std::sync::mpsc; // inter-thread communication
-use std::thread; // concurrent communication
+use std::fs::File;
+use std::io::{self, BufReader, Read};
 
-// PARAMETERS: file path
-// RETURNS: a "Result" with two vectors of strings, one for each half of the file 
-pub fn parallel_read(file_path: &str) -> io::Result<(Vec<String>, Vec<String>)> {
-    let file = File::open(file_path)?;
-    let metadata = file.metadata()?;
-    let file_size = metadata.len(); // size of the file in bytes
+const DEFAULT_CHUNK_SIZE: usize = 1024 * 1024; // 1 MB default chunk size
 
-    // divides the file reading task
-    let half = file_size / 2;
-    // tx is the transmitter, rx is the receiver
-    let (tx, rx) = mpsc::channel();
-    // clones the transmitter so can be used in multiple threads
-    let tx1 = mpsc::Sender::clone(&tx);
+// hold file paths and chunk size
+pub struct FileStreamer {
+    file_path1: String,
+    file_path2: String,
+    chunk_size: usize,
+}
 
-    // necessary to clone file path due to ownership of file_path varaible for each thread
-    let file_path_clone = file_path.to_string();
-
-    // reading first half in a thread and spawns a new thread
-    thread::spawn(move || { //"move" used to transfer ownership of captured variables
-        let file = File::open(&file_path_clone).unwrap();
-        let mut reader = BufReader::new(file); //wraps the file for efficient reading
-        let mut lines = Vec::new(); // hold the lines read
-        let mut buffer = String::new(); // hold the current line
-        while reader.stream_position().unwrap() < half {
-            reader.read_line(&mut buffer).unwrap();
-            lines.push(buffer.clone());
-            buffer.clear();
+// defines two methods, one for creating instaces of FileStreamer and one for reading chunks
+impl FileStreamer {
+    pub fn new(file_path1: &str, file_path2: &str, chunk_size: usize) -> FileStreamer {
+        FileStreamer {
+            file_path1: file_path1.to_string(),
+            file_path2: file_path2.to_string(),
+            chunk_size: if chunk_size == 0 { DEFAULT_CHUNK_SIZE } else { chunk_size },
         }
-        tx1.send(lines).unwrap(); // sends the collected lines through channel "tx1" to the main thread
-    });
+    }
 
-    // reading second half in a thread and spawns a new thread
-    let file_path_clone = file_path.to_string();
-    thread::spawn(move || {
-        let file = File::open(&file_path_clone).unwrap();
-        let mut reader = BufReader::new(file);
-        reader.seek(SeekFrom::Start(half)).unwrap(); // move the file pointer to the middle of the file
-        let lines = reader.lines().collect::<Result<Vec<_>, _>>().unwrap(); // collects all remaining line into a vector
-        tx.send(lines).unwrap(); 
-    });
+    // creates an iterator for reading chunks from both files
+    pub fn chunk_stream(&self) -> io::Result<ChunkStream> {
+        let file1 = File::open(&self.file_path1)?;
+        let file2 = File::open(&self.file_path2)?;
 
-    // main thread waits for both threads to finish and recieves vectors containing the lines
-    let first_half = rx.recv().unwrap(); 
-    let second_half = rx.recv().unwrap();
+        Ok(ChunkStream {
+            reader1: BufReader::new(file1),
+            reader2: BufReader::new(file2),
+            chunk_size: self.chunk_size,
+        })
+    }
+}
 
-    Ok((first_half, second_half))
+pub struct ChunkStream {
+    reader1: BufReader<File>,
+    reader2: BufReader<File>,
+    chunk_size: usize,
+}
+
+impl Iterator for ChunkStream {
+    type Item = io::Result<(Vec<u8>, Vec<u8>)>; 
+
+    // defines how the iterator fetches the chunk of data from each file
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut buf1 = vec![0; self.chunk_size];
+        let mut buf2 = vec![0; self.chunk_size];
+
+        match (self.reader1.read(&mut buf1), self.reader2.read(&mut buf2)) {
+            (Ok(bytes_read1), Ok(bytes_read2)) => {
+                if bytes_read1 == 0 && bytes_read2 == 0 {
+                    return None; // End of both files
+                }
+                buf1.truncate(bytes_read1); // Trim buffer to actual data size
+                buf2.truncate(bytes_read2); 
+                Some(Ok((buf1, buf2)))
+            },
+            (Err(e), _) | (_, Err(e)) => Some(Err(e)),
+        }
+    }
 }
