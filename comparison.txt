@@ -1,27 +1,38 @@
-Linear comparision:
+txt files:
 
-- 4/9/2024 (main)
-File read time: 12.2939ms
-Diff computation time: 789.3694ms
-Total time: 802.429ms
+    Linear comparision:
 
-- 4/11/2024 (myfeature)
-Diff and chunk read computation time: 207.4323ms
-Total time: 208.5496ms
+    - 4/9/2024 (main)
+    File read time: 12.2939ms
+    Diff computation time: 789.3694ms
+    Total time: 802.429ms
 
-Bidirectional comparision:
+    - 4/11/2024 (myfeature)
+    Diff and chunk read computation time: 207.4323ms
+    Total time: 208.5496ms
 
-- 4/10/2024 (myfeature) without rayon
-File read time: 678.468ms
-Diff computation time: 467.1201ms
-Total time: 1.1461809s
+    Bidirectional comparision:
 
-- 4/10/2024 (myfeature) with rayon
-File read time: 527.9726ms
-Diff computation time: 215.8701ms
-Total time: 744.0128ms
+    - 4/10/2024 (myfeature) without rayon
+    File read time: 678.468ms
+    Diff computation time: 467.1201ms
+    Total time: 1.1461809s
 
-- 4/10/2024 (into_par_iter) with rayon
-File read time: 776.4399ms
-Diff computation time: 46.09ms
-Total time: 823.0577ms
+    - 4/10/2024 (myfeature) with rayon
+    File read time: 527.9726ms
+    Diff computation time: 215.8701ms
+    Total time: 744.0128ms
+
+    - 4/10/2024 (into_par_iter) with rayon
+    File read time: 776.4399ms
+    Diff computation time: 46.09ms
+    Total time: 823.0577ms
+
+
+csv files:
+
+    Linear comparision:
+
+    - 4/9/2024 (myfeature)
+    Diff and rile read computation time: 210.0888ms
+    Total time: 210.4727ms
