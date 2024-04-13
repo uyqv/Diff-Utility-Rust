@@ -8,7 +8,7 @@ pub struct FileStreamer {
     chunk_size: usize,
 }
 
-// defines two methods, one for creating instaces of FileStreamer and one for reading chunks
+// defines two methods, one for creating instances of FileStreamer and one for reading chunks
 impl FileStreamer {
     pub fn new(file_path1: &str, file_path2: &str, chunk_size: usize) -> FileStreamer {
         FileStreamer {
