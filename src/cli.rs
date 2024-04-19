@@ -36,7 +36,7 @@ pub fn parse_arguments() -> (String, String, usize, usize, Option<Regex>) {
     let file1 = matches.value_of("file1").unwrap().trim().to_string();
     let file2 = matches.value_of("file2").unwrap().trim().to_string();
     let chunk_size = matches.value_of_t::<usize>("chunk_size").unwrap_or_else(|_| 1024 * 1024);
-    let max_mismatches_before_stop = matches.value_of_t::<usize>("max_mismatches_before_stop").unwrap_or_else(|_| 1000);
+    let max_mismatches_before_stop = matches.value_of_t::<usize>("max_mismatches_before_stop").unwrap_or_else(|_| 100);
     let ignore_pattern = matches.value_of("ignore_pattern").map(|p| Regex::new(p).expect("Invalid regex pattern"));
 
 

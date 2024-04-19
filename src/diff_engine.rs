@@ -1,5 +1,3 @@
-use rayon::prelude::*; // enables data-parallel operations
-
 pub struct DiffEngine {
     line_number_offset: usize, // tracks cumulative line numbers across chunks
 }
@@ -12,7 +10,7 @@ pub struct Difference {
 }
 
 impl DiffEngine {
-    // constructor for DiffEngine
+    // Constructor for DiffEngine
     // RETURNS: an instance of DiffEngine
     pub fn new() -> DiffEngine {
         DiffEngine {
@@ -20,24 +18,24 @@ impl DiffEngine {
         }
     }
 
-    // compares two chunks and returns a list of differences
+    // Compares two chunks and returns a list of differences
     // PARAMETERS: two chunks of data
     // RETURNS: a list of Differences 
     pub fn compare_chunks(&mut self, chunk1: &[u8], chunk2: &[u8]) -> Vec<Difference> {
-        // convert byte slices to UTF-8 strings
+        // Convert byte slices to UTF-8 strings
         let content1 = std::str::from_utf8(chunk1).unwrap_or_default();
         let content2 = std::str::from_utf8(chunk2).unwrap_or_default();
 
-        // split the strings into lines or units for comparison
+        // Split the strings into lines or units for comparison
         let lines1: Vec<&str> = content1.lines().collect();
         let lines2: Vec<&str> = content2.lines().collect();
 
         let lines1_len = lines1.len();
 
-        // calculate the differences for the current chunk
+        // Calculate the differences for the current chunk
         let differences: Vec<Difference> = lines1
-            .into_par_iter()
-            .zip(lines2.into_par_iter())
+            .into_iter()
+            .zip(lines2.into_iter())
             .enumerate()
             .filter_map(|(index, (line1, line2))| {
                 if line1 != line2 {
@@ -52,9 +50,9 @@ impl DiffEngine {
             })
             .collect();
 
-        // update the line number offset for the next chunk
+        // Update the line number offset for the next chunk
         self.line_number_offset += lines1_len; // increase by number of lines processed in this chunk
-
+        
         differences
     }
 }
